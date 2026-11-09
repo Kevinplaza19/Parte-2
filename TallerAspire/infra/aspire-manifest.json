@@ -1,0 +1,97 @@
+{
+  "resources": {
+    "cache-redis": {
+      "type": "container.v0",
+      "connectionString": "{cache-redis.bindings.tcp.host}:{cache-redis.bindings.tcp.port},password={cache-redis-password.value}{cond-cache-redis-bindings-tcp-tlsenabled-2e25c26b.connectionString}",
+      "image": "docker.io/library/redis:7-alpine",
+      "entrypoint": "/bin/sh",
+      "args": [
+        "-c",
+        "redis-server --requirepass $REDIS_PASSWORD --save 60 1"
+      ],
+      "volumes": [
+        {
+          "name": "aspire-cache-data",
+          "target": "/data",
+          "readOnly": false
+        }
+      ],
+      "env": {
+        "REDIS_PASSWORD": "{cache-redis-password.value}"
+      },
+      "bindings": {
+        "tcp": {
+          "scheme": "redis",
+          "protocol": "tcp",
+          "transport": "tcp",
+          "targetPort": 6379
+        }
+      }
+    },
+    "servidor-postgres": {
+      "type": "container.v0",
+      "connectionString": "Host={servidor-postgres.bindings.tcp.host};Port={servidor-postgres.bindings.tcp.port};Username=postgres;Password={servidor-postgres-password.value}",
+      "image": "docker.io/library/postgres:16-alpine",
+      "volumes": [
+        {
+          "name": "aspire-postgres-data",
+          "target": "/var/lib/postgresql/data",
+          "readOnly": false
+        }
+      ],
+      "env": {
+        "POSTGRES_HOST_AUTH_METHOD": "scram-sha-256",
+        "POSTGRES_INITDB_ARGS": "--auth-host=scram-sha-256 --auth-local=scram-sha-256",
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD": "{servidor-postgres-password.value}"
+      },
+      "bindings": {
+        "tcp": {
+          "scheme": "tcp",
+          "protocol": "tcp",
+          "transport": "tcp",
+          "targetPort": 5432
+        }
+      }
+    },
+    "db-integracion": {
+      "type": "value.v0",
+      "connectionString": "{servidor-postgres.connectionString};Database=db_integracion"
+    },
+    "cache-redis-password": {
+      "type": "parameter.v0",
+      "value": "{cache-redis-password.inputs.value}",
+      "inputs": {
+        "value": {
+          "type": "string",
+          "secret": true,
+          "default": {
+            "generate": {
+              "minLength": 22,
+              "special": false
+            }
+          }
+        }
+      }
+    },
+    "servidor-postgres-password": {
+      "type": "parameter.v0",
+      "value": "{servidor-postgres-password.inputs.value}",
+      "inputs": {
+        "value": {
+          "type": "string",
+          "secret": true,
+          "default": {
+            "generate": {
+              "minLength": 22
+            }
+          }
+        }
+      }
+    },
+    "cond-cache-redis-bindings-tcp-tlsenabled-2e25c26b": {
+      "type": "value.v0",
+      "connectionString": ""
+    }
+  }
+}
